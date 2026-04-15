@@ -35,6 +35,10 @@ The preamble will be reattached automatically.
 4. Only edit content inside existing environments. Properly escape LaTeX special
    characters in any new prose. Never modify or redefine any custom commands.
 5. No hallucinated keywords. If a JD skill isn't in the resume anywhere, don't add it.
+6. PRESERVE ALL \\textbf{} keyword highlighting from the original body verbatim.
+   Every word or phrase that was wrapped in \\textbf{} in the original MUST remain
+   wrapped in \\textbf{} in the output. Additionally, wrap any important JD keywords
+   you introduce or promote into bullet positions with \\textbf{} as well.
 
 === HIRING MANAGER LENS (fix these using only existing content) ===
 
