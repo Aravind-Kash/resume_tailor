@@ -6,6 +6,7 @@ No SDK, just plain HTTP.
 from __future__ import annotations
 
 import re
+import time
 
 import requests
 
@@ -175,18 +176,31 @@ inside <TAILORED_BODY> tags, plus the changes report.
         "max_tokens": 8192,
     }
 
-    try:
-        resp = requests.post(
-            GROQ_ENDPOINT,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={**payload, "model": model},
-            timeout=120,
-        )
-    except requests.RequestException as exc:
-        return TailorResult(False, "", "", f"Network error calling Groq: {exc}")
+    max_retries = 4
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(
+                GROQ_ENDPOINT,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={**payload, "model": model},
+                timeout=120,
+            )
+        except requests.RequestException as exc:
+            return TailorResult(False, "", "", f"Network error calling Groq: {exc}")
+
+        if resp.status_code == 503:
+            if attempt < max_retries - 1:
+                wait = 2 ** attempt  # 1s, 2s, 4s, 8s
+                time.sleep(wait)
+                continue
+            return TailorResult(
+                False, "", "",
+                "Groq is over capacity. Please try again in a moment.",
+            )
+        break  # any other status — handle below
 
     if resp.status_code != 200:
         try:
