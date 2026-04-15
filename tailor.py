@@ -140,7 +140,7 @@ Return the full tailored LaTeX and the changes report in the exact format specif
     fallback_models = [
         model,
         "llama-3.1-8b-instant",
-        "llama3-8b-8192",
+        "gemma2-9b-it",
     ]
     # Deduplicate while preserving order
     seen: set = set()
@@ -161,7 +161,10 @@ Return the full tailored LaTeX and the changes report in the exact format specif
         except requests.RequestException as exc:
             return TailorResult(False, "", "", f"Network error calling Groq: {exc}")
 
-        if resp.status_code == 413:
+        if resp.status_code == 413 or (
+            resp.status_code == 400
+            and "decommissioned" in resp.text
+        ):
             try:
                 last_error = resp.json().get("error", {}).get("message", resp.text)
             except Exception:
