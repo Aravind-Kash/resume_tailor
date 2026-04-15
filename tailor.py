@@ -6,7 +6,6 @@ No SDK, just plain HTTP.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 
 import requests
 
@@ -89,12 +88,12 @@ You MUST return exactly this structure and nothing else:
 # Data types
 # ---------------------------------------------------------------------------
 
-@dataclass
 class TailorResult:
-    ok: bool
-    tailored_tex: str
-    changes_md: str
-    error: str = ""
+    def __init__(self, ok: bool, tailored_tex: str, changes_md: str, error: str = ""):
+        self.ok = ok
+        self.tailored_tex = tailored_tex
+        self.changes_md = changes_md
+        self.error = error
 
 
 # ---------------------------------------------------------------------------
