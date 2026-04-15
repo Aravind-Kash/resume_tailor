@@ -111,6 +111,25 @@ elif not st.session_state.resume_tex:
 elif not jd_text.strip():
     st.info("Paste the job description on the right.")
 
+# Quick API key test
+if api_key:
+    if st.button("🔍 Test API key", help="Verify your Gemini key works before tailoring"):
+        import requests as _req
+        r = _req.post(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+            params={"key": api_key},
+            json={"contents": [{"parts": [{"text": "Reply with the single word: OK"}]}]},
+            timeout=15,
+        )
+        if r.status_code == 200:
+            st.success("✅ API key works!")
+        else:
+            try:
+                msg = r.json().get("error", {}).get("message", r.text)
+            except Exception:
+                msg = r.text
+            st.error(f"❌ API key error (HTTP {r.status_code}): {msg}")
+
 # ---------------------------------------------------------------------------
 # Tailoring pipeline
 # ---------------------------------------------------------------------------
@@ -126,7 +145,8 @@ if tailor_clicked:
 
         if not tailor_result.ok:
             status.update(label="❌ Tailoring failed", state="error")
-            st.error(tailor_result.error)
+            st.error(f"**Error:** {tailor_result.error}")
+            st.info("👆 Copy this error and share it to get help debugging.")
             st.stop()
 
         st.write("📄 Compiling PDF…")
