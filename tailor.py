@@ -1,7 +1,6 @@
-"""LLM-powered resume tailoring using Google Gemini via REST API.
+"""LLM-powered resume tailoring using Groq via OpenAI-compatible REST API.
 
-We hit the Gemini REST endpoint directly with `requests` to avoid any
-google-* namespace package issues (which are common on Streamlit Cloud).
+We hit the Groq REST endpoint directly with `requests`.
 No SDK, just plain HTTP.
 """
 from __future__ import annotations
@@ -11,9 +10,7 @@ from dataclasses import dataclass
 
 import requests
 
-GEMINI_ENDPOINT = (
-    "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-)
+GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 
 # ---------------------------------------------------------------------------
 # Tailoring rules (mirrors TAILOR_PROMPT.md, embedded so the deployed app
@@ -108,9 +105,9 @@ def tailor_resume(
     resume_tex: str,
     jd_text: str,
     api_key: str,
-    model: str = "gemini-2.0-flash-lite",
+    model: str = "llama-3.3-70b-versatile",
 ) -> TailorResult:
-    """Call Gemini REST API to tailor the resume. Returns TailorResult."""
+    """Call Groq REST API to tailor the resume. Returns TailorResult."""
 
     if not api_key:
         return TailorResult(False, "", "", "No API key provided.")
@@ -131,56 +128,49 @@ Return the full tailored LaTeX and the changes report in the exact format specif
 """.strip()
 
     payload = {
-        "system_instruction": {
-            "parts": [{"text": SYSTEM_INSTRUCTIONS}],
-        },
-        "contents": [
-            {
-                "role": "user",
-                "parts": [{"text": user_message}],
-            }
+        "model": model,
+        "messages": [
+            {"role": "system", "content": SYSTEM_INSTRUCTIONS},
+            {"role": "user", "content": user_message},
         ],
-        "generationConfig": {
-            "temperature": 0.2,
-            "maxOutputTokens": 8192,
-        },
+        "temperature": 0.2,
+        "max_tokens": 8192,
     }
-
-    url = GEMINI_ENDPOINT.format(model=model)
 
     try:
         resp = requests.post(
-            url,
-            params={"key": api_key},
+            GROQ_ENDPOINT,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
             json=payload,
             timeout=120,
         )
     except requests.RequestException as exc:
-        return TailorResult(False, "", "", f"Network error calling Gemini: {exc}")
+        return TailorResult(False, "", "", f"Network error calling Groq: {exc}")
 
     if resp.status_code != 200:
-        # Try to extract a useful error message
         try:
             err = resp.json().get("error", {}).get("message", resp.text)
         except Exception:
             err = resp.text
         return TailorResult(
             False, "", "",
-            f"Gemini API error (HTTP {resp.status_code}): {err}",
+            f"Groq API error (HTTP {resp.status_code}): {err}",
         )
 
     try:
         data = resp.json()
-        candidates = data.get("candidates", [])
-        if not candidates:
+        choices = data.get("choices", [])
+        if not choices:
             return TailorResult(
                 False, "", "",
-                f"Gemini returned no candidates. Full response: {data}",
+                f"Groq returned no choices. Full response: {data}",
             )
-        parts = candidates[0].get("content", {}).get("parts", [])
-        raw = "".join(p.get("text", "") for p in parts)
+        raw = choices[0].get("message", {}).get("content", "")
     except Exception as exc:
-        return TailorResult(False, "", "", f"Could not parse Gemini response: {exc}")
+        return TailorResult(False, "", "", f"Could not parse Groq response: {exc}")
 
     if not raw.strip():
         return TailorResult(False, "", "", "Gemini returned an empty response.")

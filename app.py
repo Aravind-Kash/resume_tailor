@@ -3,7 +3,7 @@
 Paste a job description + upload your LaTeX resume → get a tailored PDF.
 No switching between apps. Works locally and when deployed to Streamlit Cloud.
 
-LLM: Google Gemini Flash (free tier, 1,500 req/day).
+LLM: Groq (llama-3.3-70b-versatile, free tier).
 PDF: pdflatex / latexmk / tectonic (whichever is installed).
 """
 from __future__ import annotations
@@ -27,7 +27,7 @@ st.set_page_config(
 st.title("📄 Resume Personalizer")
 st.caption(
     "Paste a job description, upload your LaTeX resume, and get a tailored PDF — "
-    "all on this page. Powered by Google Gemini Flash (free)."
+    "all on this page. Powered by Groq (llama-3.3-70b-versatile)."
 )
 
 # ---------------------------------------------------------------------------
@@ -35,21 +35,21 @@ st.caption(
 # ---------------------------------------------------------------------------
 api_key = ""
 try:
-    api_key = st.secrets["GEMINI_API_KEY"]
+    api_key = st.secrets["GROQ_API_KEY"]
 except (FileNotFoundError, KeyError):
     pass
 
 if not api_key:
-    with st.expander("🔑 Enter your free Gemini API key", expanded=True):
+    with st.expander("🔑 Enter your free Groq API key", expanded=True):
         st.markdown(
-            "Get a free key at [ai.google.dev](https://ai.google.dev) "
+            "Get a free key at [console.groq.com](https://console.groq.com) "
             "(takes ~1 minute, no credit card). "
-            "On Streamlit Cloud, add it as a secret named `GEMINI_API_KEY`."
+            "On Streamlit Cloud, add it as a secret named `GROQ_API_KEY`."
         )
         api_key = st.text_input(
-            "Gemini API key",
+            "Groq API key",
             type="password",
-            placeholder="AIza...",
+            placeholder="gsk_...",
             help="Never stored. Used only for this session.",
         )
 
@@ -105,7 +105,7 @@ with btn_col:
     )
 
 if not api_key:
-    st.warning("Enter your Gemini API key above to get started.")
+    st.warning("Enter your Groq API key above to get started.")
 elif not st.session_state.resume_tex:
     st.info("Upload your .tex resume on the left.")
 elif not jd_text.strip():
@@ -113,20 +113,27 @@ elif not jd_text.strip():
 
 # Quick API key test
 if api_key:
-    if st.button("🔍 Test API key", help="Finds which Gemini models are available on your key"):
+    if st.button("🔍 Test API key", help="Checks which Groq models are available on your key"):
         import requests as _req
         models_to_try = [
-            "gemini-2.0-flash-lite",
-            "gemini-2.0-flash",
-            "gemini-2.5-flash-preview-04-17",
-            "gemini-1.5-flash-latest",
+            "llama-3.3-70b-versatile",
+            "llama3-70b-8192",
+            "llama3-8b-8192",
+            "mixtral-8x7b-32768",
         ]
         found = None
         for m in models_to_try:
             r = _req.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent",
-                params={"key": api_key},
-                json={"contents": [{"parts": [{"text": "Reply OK"}]}]},
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": m,
+                    "messages": [{"role": "user", "content": "Reply OK"}],
+                    "max_tokens": 5,
+                },
                 timeout=15,
             )
             if r.status_code == 200:
@@ -140,7 +147,7 @@ if api_key:
                     msg = r.text[:120]
                 st.caption(f"  `{m}` → {r.status_code}: {msg}")
         if not found:
-            st.error("❌ No working model found. Check your API key is for Google AI Studio (ai.google.dev), not Google Cloud.")
+            st.error("❌ No working model found. Check your API key at console.groq.com.")
 
 # ---------------------------------------------------------------------------
 # Tailoring pipeline
@@ -148,7 +155,7 @@ if api_key:
 if tailor_clicked:
     with st.status("Tailoring your resume…", expanded=True) as status:
 
-        st.write("🤖 Sending to Gemini for analysis and tailoring…")
+        st.write("🤖 Sending to Groq for analysis and tailoring…")
         tailor_result = tailor_resume(
             resume_tex=st.session_state.resume_tex,
             jd_text=jd_text,
