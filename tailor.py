@@ -1,16 +1,19 @@
-"""LLM-powered resume tailoring using Google Gemini Flash (free tier).
+"""LLM-powered resume tailoring using Google Gemini via REST API.
 
-Sends the resume + JD to Gemini and gets back a tailored LaTeX file
-plus a structured changes report. No paid services -- uses the free
-Google AI Studio API key (1,500 requests/day free).
+We hit the Gemini REST endpoint directly with `requests` to avoid any
+google-* namespace package issues (which are common on Streamlit Cloud).
+No SDK, just plain HTTP.
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 
-from google import genai
-from google.genai import types
+import requests
+
+GEMINI_ENDPOINT = (
+    "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+)
 
 # ---------------------------------------------------------------------------
 # Tailoring rules (mirrors TAILOR_PROMPT.md, embedded so the deployed app
@@ -107,7 +110,7 @@ def tailor_resume(
     api_key: str,
     model: str = "gemini-2.0-flash",
 ) -> TailorResult:
-    """Call Gemini to tailor the resume. Returns TailorResult."""
+    """Call Gemini REST API to tailor the resume. Returns TailorResult."""
 
     if not api_key:
         return TailorResult(False, "", "", "No API key provided.")
@@ -115,8 +118,6 @@ def tailor_resume(
         return TailorResult(False, "", "", "Resume is empty.")
     if not jd_text.strip():
         return TailorResult(False, "", "", "Job description is empty.")
-
-    client = genai.Client(api_key=api_key)
 
     user_message = f"""
 === JOB DESCRIPTION ===
@@ -129,28 +130,69 @@ Tailor the resume to the job description following all rules above.
 Return the full tailored LaTeX and the changes report in the exact format specified.
 """.strip()
 
+    payload = {
+        "system_instruction": {
+            "parts": [{"text": SYSTEM_INSTRUCTIONS}],
+        },
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": user_message}],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 8192,
+        },
+    }
+
+    url = GEMINI_ENDPOINT.format(model=model)
+
     try:
-        response = client.models.generate_content(
-            model=model,
-            contents=user_message,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTIONS,
-                temperature=0.2,
-                max_output_tokens=8192,
-            ),
+        resp = requests.post(
+            url,
+            params={"key": api_key},
+            json=payload,
+            timeout=120,
         )
-        raw = response.text
+    except requests.RequestException as exc:
+        return TailorResult(False, "", "", f"Network error calling Gemini: {exc}")
+
+    if resp.status_code != 200:
+        # Try to extract a useful error message
+        try:
+            err = resp.json().get("error", {}).get("message", resp.text)
+        except Exception:
+            err = resp.text
+        return TailorResult(
+            False, "", "",
+            f"Gemini API error (HTTP {resp.status_code}): {err}",
+        )
+
+    try:
+        data = resp.json()
+        candidates = data.get("candidates", [])
+        if not candidates:
+            return TailorResult(
+                False, "", "",
+                f"Gemini returned no candidates. Full response: {data}",
+            )
+        parts = candidates[0].get("content", {}).get("parts", [])
+        raw = "".join(p.get("text", "") for p in parts)
     except Exception as exc:
-        return TailorResult(False, "", "", f"Gemini API error: {exc}")
+        return TailorResult(False, "", "", f"Could not parse Gemini response: {exc}")
+
+    if not raw.strip():
+        return TailorResult(False, "", "", "Gemini returned an empty response.")
 
     # Parse the two tagged sections
     tex_match = re.search(
         r"<TAILORED_RESUME>\s*(.*?)\s*</TAILORED_RESUME>",
-        raw, re.DOTALL
+        raw, re.DOTALL,
     )
     changes_match = re.search(
         r"<CHANGES>\s*(.*?)\s*</CHANGES>",
-        raw, re.DOTALL
+        raw, re.DOTALL,
     )
 
     if not tex_match:
@@ -161,18 +203,22 @@ Return the full tailored LaTeX and the changes report in the exact format specif
         else:
             return TailorResult(
                 False, "", "",
-                "Could not parse LaTeX from model response. Raw response:\n\n" + raw[:2000]
+                "Could not parse LaTeX from model response. First 2000 chars:\n\n" + raw[:2000],
             )
     else:
         tailored_tex = tex_match.group(1).strip()
 
-    changes_md = changes_match.group(1).strip() if changes_match else "(No changes report generated.)"
+    changes_md = (
+        changes_match.group(1).strip()
+        if changes_match
+        else "(No changes report generated.)"
+    )
 
     # Basic sanity check
     if "\\documentclass" not in tailored_tex or "\\end{document}" not in tailored_tex:
         return TailorResult(
             False, tailored_tex, changes_md,
-            "Model returned incomplete LaTeX (missing \\documentclass or \\end{document})."
+            "Model returned incomplete LaTeX (missing \\documentclass or \\end{document}).",
         )
 
     return TailorResult(True, tailored_tex, changes_md)
