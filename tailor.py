@@ -18,7 +18,12 @@ GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 
 SYSTEM_INSTRUCTIONS = """
 You are an expert resume writer, LaTeX specialist, and senior hiring manager at a top tech company.
-Your task: tailor the provided LaTeX resume to a specific job description.
+Your task: tailor the provided LaTeX resume BODY to a specific job description.
+
+IMPORTANT: You will receive ONLY the content between \\begin{document} and \\end{document}.
+You must return ONLY that body content — do NOT include \\documentclass, \\usepackage,
+\\newcommand definitions, or any preamble. Do NOT include \\begin{document} or \\end{document} tags.
+The preamble will be reattached automatically.
 
 === HARD RULES (never break these) ===
 
@@ -27,9 +32,8 @@ Your task: tailor the provided LaTeX resume to a specific job description.
    certifications, metrics, or accomplishments not already present.
 2. NEVER change any number or metric. Copy them verbatim.
 3. Preserve all facts: job titles, company names, employment dates, degrees, locations.
-4. Output must be valid, compilable LaTeX. Preserve the document class, preamble,
-   packages, and custom commands. Only edit content inside existing environments.
-   Properly escape LaTeX special characters in any new prose.
+4. Only edit content inside existing environments. Properly escape LaTeX special
+   characters in any new prose. Never modify or redefine any custom commands.
 5. No hallucinated keywords. If a JD skill isn't in the resume anywhere, don't add it.
 
 === HIRING MANAGER LENS (fix these using only existing content) ===
@@ -59,9 +63,9 @@ Your task: tailor the provided LaTeX resume to a specific job description.
 
 You MUST return exactly this structure and nothing else:
 
-<TAILORED_RESUME>
-[complete tailored LaTeX — must be the full, compilable .tex file]
-</TAILORED_RESUME>
+<TAILORED_BODY>
+[tailored LaTeX body content only — everything that goes between \\begin{document} and \\end{document}]
+</TAILORED_BODY>
 
 <CHANGES>
 ## Role Tailored For
@@ -82,6 +86,30 @@ You MUST return exactly this structure and nothing else:
 [JD requirements the resume genuinely cannot support — so the candidate knows]
 </CHANGES>
 """.strip()
+
+
+# ---------------------------------------------------------------------------
+# Preamble helpers
+# ---------------------------------------------------------------------------
+
+def _split_preamble_body(tex: str) -> tuple[str, str]:
+    """Split a .tex file into (preamble_with_begin_doc, body).
+
+    preamble includes everything up to and including \\begin{document}.
+    body is everything between \\begin{document} and \\end{document}.
+    Returns (preamble, body); if no \\begin{document} found returns ("", tex).
+    """
+    begin_match = re.search(r"\\begin\{document\}", tex)
+    end_match = re.search(r"\\end\{document\}", tex)
+    if not begin_match or not end_match:
+        return "", tex
+    preamble = tex[: begin_match.end()]  # up to and including \begin{document}
+    body = tex[begin_match.end() : end_match.start()].strip()
+    return preamble, body
+
+
+def _rejoin(preamble: str, body: str) -> str:
+    return preamble + "\n" + body + "\n\\end{document}\n"
 
 
 # ---------------------------------------------------------------------------
@@ -115,15 +143,23 @@ def tailor_resume(
     if not jd_text.strip():
         return TailorResult(False, "", "", "Job description is empty.")
 
+    # Split preamble so the model only sees (and can only corrupt) the body
+    preamble, body = _split_preamble_body(resume_tex)
+    if not preamble:
+        # Fallback: send the whole file if we can't detect structure
+        preamble = ""
+        body = resume_tex
+
     user_message = f"""
 === JOB DESCRIPTION ===
 {jd_text.strip()}
 
-=== CURRENT RESUME (LaTeX) ===
-{resume_tex.strip()}
+=== CURRENT RESUME BODY (LaTeX — content between \\begin{{document}} and \\end{{document}}) ===
+{body}
 
-Tailor the resume to the job description following all rules above.
-Return the full tailored LaTeX and the changes report in the exact format specified.
+Tailor the resume body to the job description following all rules above.
+Return ONLY the body content (no preamble, no \\begin{{document}}/\\end{{document}} tags)
+inside <TAILORED_BODY> tags, plus the changes report.
 """.strip()
 
     payload = {
@@ -175,7 +211,7 @@ Return the full tailored LaTeX and the changes report in the exact format specif
 
     # Parse the two tagged sections
     tex_match = re.search(
-        r"<TAILORED_RESUME>\s*(.*?)\s*</TAILORED_RESUME>",
+        r"<TAILORED_BODY>\s*(.*?)\s*</TAILORED_BODY>",
         raw, re.DOTALL,
     )
     changes_match = re.search(
@@ -184,17 +220,18 @@ Return the full tailored LaTeX and the changes report in the exact format specif
     )
 
     if not tex_match:
-        # Fallback: maybe the model forgot the tags; try to find \documentclass
-        doc_match = re.search(r"(\\documentclass.*\\end\{document\})", raw, re.DOTALL)
-        if doc_match:
-            tailored_tex = doc_match.group(1).strip()
-        else:
-            return TailorResult(
-                False, "", "",
-                "Could not parse LaTeX from model response. First 2000 chars:\n\n" + raw[:2000],
-            )
+        return TailorResult(
+            False, "", "",
+            "Could not parse tailored body from model response. First 2000 chars:\n\n" + raw[:2000],
+        )
+
+    tailored_body = tex_match.group(1).strip()
+
+    # Reattach the original preamble so custom commands are always intact
+    if preamble:
+        tailored_tex = _rejoin(preamble, tailored_body)
     else:
-        tailored_tex = tex_match.group(1).strip()
+        tailored_tex = tailored_body
 
     changes_md = (
         changes_match.group(1).strip()
@@ -203,10 +240,10 @@ Return the full tailored LaTeX and the changes report in the exact format specif
     )
 
     # Basic sanity check
-    if "\\documentclass" not in tailored_tex or "\\end{document}" not in tailored_tex:
+    if "\\end{document}" not in tailored_tex:
         return TailorResult(
             False, tailored_tex, changes_md,
-            "Model returned incomplete LaTeX (missing \\documentclass or \\end{document}).",
+            "Assembled LaTeX is missing \\end{document}.",
         )
 
     return TailorResult(True, tailored_tex, changes_md)
