@@ -9,7 +9,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # ---------------------------------------------------------------------------
 # Tailoring rules (mirrors TAILOR_PROMPT.md, embedded so the deployed app
@@ -115,11 +116,7 @@ def tailor_resume(
     if not jd_text.strip():
         return TailorResult(False, "", "", "Job description is empty.")
 
-    genai.configure(api_key=api_key)
-    gemini = genai.GenerativeModel(
-        model_name=model,
-        system_instruction=SYSTEM_INSTRUCTIONS,
-    )
+    client = genai.Client(api_key=api_key)
 
     user_message = f"""
 === JOB DESCRIPTION ===
@@ -133,10 +130,12 @@ Return the full tailored LaTeX and the changes report in the exact format specif
 """.strip()
 
     try:
-        response = gemini.generate_content(
-            user_message,
-            generation_config=genai.GenerationConfig(
-                temperature=0.2,       # low temp for precise, consistent edits
+        response = client.models.generate_content(
+            model=model,
+            contents=user_message,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTIONS,
+                temperature=0.2,
                 max_output_tokens=8192,
             ),
         )
