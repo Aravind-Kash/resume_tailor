@@ -113,22 +113,34 @@ elif not jd_text.strip():
 
 # Quick API key test
 if api_key:
-    if st.button("🔍 Test API key", help="Verify your Gemini key works before tailoring"):
+    if st.button("🔍 Test API key", help="Finds which Gemini models are available on your key"):
         import requests as _req
-        r = _req.post(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-            params={"key": api_key},
-            json={"contents": [{"parts": [{"text": "Reply with the single word: OK"}]}]},
-            timeout=15,
-        )
-        if r.status_code == 200:
-            st.success("✅ API key works!")
-        else:
-            try:
-                msg = r.json().get("error", {}).get("message", r.text)
-            except Exception:
-                msg = r.text
-            st.error(f"❌ API key error (HTTP {r.status_code}): {msg}")
+        models_to_try = [
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash",
+            "gemini-2.5-flash-preview-04-17",
+            "gemini-1.5-flash-latest",
+        ]
+        found = None
+        for m in models_to_try:
+            r = _req.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent",
+                params={"key": api_key},
+                json={"contents": [{"parts": [{"text": "Reply OK"}]}]},
+                timeout=15,
+            )
+            if r.status_code == 200:
+                found = m
+                st.success(f"✅ API key works! Using model: `{m}`")
+                break
+            else:
+                try:
+                    msg = r.json().get("error", {}).get("message", r.text)[:120]
+                except Exception:
+                    msg = r.text[:120]
+                st.caption(f"  `{m}` → {r.status_code}: {msg}")
+        if not found:
+            st.error("❌ No working model found. Check your API key is for Google AI Studio (ai.google.dev), not Google Cloud.")
 
 # ---------------------------------------------------------------------------
 # Tailoring pipeline

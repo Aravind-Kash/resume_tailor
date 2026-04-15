@@ -108,7 +108,7 @@ def tailor_resume(
     resume_tex: str,
     jd_text: str,
     api_key: str,
-    model: str = "gemini-1.5-flash",
+    model: str = "gemini-2.0-flash-lite",
 ) -> TailorResult:
     """Call Gemini REST API to tailor the resume. Returns TailorResult."""
 
