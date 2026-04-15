@@ -1,0 +1,28 @@
+# Virtual environment
+.venv/
+
+# Generated job packets (contain your personal resume + JD data)
+jobs/
+
+# Cowork-local skill (not needed on server)
+tailor-resume-skill/
+
+# Streamlit local secrets (never commit your API key)
+.streamlit/secrets.toml
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store

@@ -1,0 +1,205 @@
+%-------------------------
+% Resume in LaTeX
+% Author : Aravind Ravi Kiran Kashyap
+% Based on: https://github.com/sb2nov/resume
+% License : MIT
+%------------------------
+
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\input{glyphtounicode}
+
+% Ensure ATS can read special characters
+\pdfgentounicode=1
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.6in}
+\addtolength{\evensidemargin}{-0.6in}
+\addtolength{\textwidth}{1.2in}
+\addtolength{\topmargin}{-.7in}
+\addtolength{\textheight}{1.4in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-6pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-6pt}]
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textbf{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[itemsep=-1pt, leftmargin=0.1in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-7pt}}
+
+%-------------------------------------------
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape Aravind Ravi Kiran Kashyap} \\ \vspace{1pt}
+    \small Austin, Texas \textbar{} 817-805-3725 \textbar{} \href{mailto:aravindr.kashyap@outlook.com}{\underline{aravindr.kashyap@outlook.com}} \textbar{} 
+    \href{https://linkedin.com/in/aravind0530}{\underline{linkedin.com/in/aravind0530}} \textbar{}
+    \href{https://github.com/Aravind-Kash}{\underline{github.com/Aravind-Kash}}
+\end{center}
+
+%-----------PROFESSIONAL SUMMARY-----------
+\section{Professional Summary}
+\small{AI/ML Software Engineer with 2+ years of experience in computer vision and machine learning for enterprise production systems. Skilled in edge computing and cloud AI solutions contributing to \$13M+ in cost savings. Experienced in real-time vision systems, reinforcement learning, and predictive maintenance models achieving 90\%+ accuracy.}
+
+%-----------EDUCATION-----------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {The University of Texas at Arlington}{Arlington, Texas}
+      {Master of Science in Computer Engineering \textbar{} Intelligent Systems \& Robotics}{Aug 2021 -- Aug 2023}
+    \resumeSubheading
+      {Visvesvaraya Technological University}{Bengaluru, India}
+      {Bachelor of Engineering in Electronics and Telecommunication Engineering}{Aug 2017 -- July 2021}
+  \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------
+\section{Work Experience}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+      {AI Software Engineer}{Nov 2023 -- Present}
+      {\underline{Schaeffler Motion Technology}}{Seguin, Texas}
+      \resumeItemListStart
+        \resumeItem{Built a real-time \textbf{CV pipeline} with another AI engineer on \textbf{Raspberry Pi 5} edge devices -- motion detection, \textbf{face recognition}, \textbf{GDPR-compliant} privacy filtering -- achieving \textbf{95\% accuracy} at 30 FPS on 1080p with limited training data, enabling automated incident detection and improved AGV utilization.}
+        \resumeItem{Improved anomaly prediction accuracy from 75\% to \textbf{92\%} and reduced false positives by \textbf{45\%} across 1,000+ predictions by building a \textbf{Q-Learning} system from scratch as sole developer, designed for minimal training data and real-time threshold adjustment despite noisy sensor data and labeling constraints.}
+        \resumeItem{Reduced manual measurement processing time by \textbf{60\%} (~500 measurements/day) by designing and building a \textbf{Stereo Vision 3D Measurement System} end-to-end as sole developer on a 6-week safety-driven timeline, using \textbf{dual-camera stereo calibration} and \textbf{3D depth reconstruction} to achieve verified \textbf{sub-decimeter precision}.}
+        \resumeItem{Delivered \textbf{\$3M+ in cost savings} from reduced scrap and warranty returns by developing \textbf{CV inspection models} with another AI engineer and process/quality engineers, built as a \textbf{real-time inference engine} in \textbf{Python and C\#} on edge devices, reducing detection latency by \textbf{35\%} and improving accuracy by \textbf{28\%}.}
+        \resumeItem{Achieved \textbf{99.5\% accuracy} in automated \textbf{PCB etching verification} by deploying \textbf{ResNet and OCR pipelines} across 5 edge nodes, reducing inference latency by \textbf{65\%} and eliminating ~\$30K/week in scrap costs despite variable etching placement, inconsistent lighting, and no existing SOP for the manual process it replaced.}
+        \resumeItem{Prevented \textbf{\$10M+ in annual containment costs} (scrap, downtime, rework) with a \textbf{28\% reduction} in unplanned downtime by building \textbf{predictive analytics (K-Means, DBSCAN, Random Forest)} with another AI engineer, using ambient test-jig data to identify failures 3 weeks in advance.}
+        \resumeItem{Reduced manual document comparison by \textbf{3,000 man hours} as sole developer of an \textbf{NLP-powered chatbot} using \textbf{sentence transformers} to match quality error codes by context, later extended to compliance and quality documents.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {AI Engineering Intern}{May 2022 -- Aug 2022}
+      {\underline{Schaeffler Motion Technology}}{Seguin, Texas}
+      \resumeItemListStart
+        \resumeItem{Reduced hardware defect rates by \textbf{85\%} and saved over \textbf{\$1,000,000 annually} by leading an end-to-end \textbf{ML defect prediction project}, coordinating requirements and deliverables across process engineering, quality, and data teams.}
+        \resumeItem{Enabled \textbf{real-time processing of 10,000+ data points/hour} at \textbf{85\% accuracy} by building \textbf{data pipelines} with \textbf{PCA} over \textbf{500GB+ raw sensor data} and training \textbf{ML models (Linear/Logistic Regression, Random Forest, DNNs)}, reducing prediction latency by \textbf{40\%}.}
+        \resumeItem{Improved detection precision by \textbf{30\%} by integrating \textbf{computer vision} into \underline{Schaeffler's} existing \textbf{AWS-based analytics framework} for high-resolution imagery processing with multi-modal data analysis.}
+        \resumeItem{Led team building exercises, mentored interns on Python-based solutions, and authored technical paper for international journal publication (pending Corporate Communications approval).}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Research Intern}{Sept 2020 -- May 2021}
+      {\underline{Gas Turbine Research Establishment, DRDO}}{Bengaluru, India}
+      \resumeItemListStart
+        \resumeItem{Led team of 3 interns to design \textbf{Autonomous Vehicular Corridor system}, optimizing \textbf{CNN model} performance by reducing inference time by \textbf{40\%} and achieving \textbf{95\% accuracy} in vehicle tracking.}
+        \resumeItem{Designed \textbf{distributed processing architecture} using \textbf{Java and MATLAB}, improving vehicle positioning accuracy by \textbf{30\%}, and developed \textbf{Android application} for remote monitoring with \textbf{50\% better user interaction time}.}
+      \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------
+\section{AI Projects}
+    \resumeSubHeadingListStart
+      \resumeProjectHeading
+          {\textbf{AI Personal Reminder Assistant} \textbar{} \emph{Python, FastAPI, GPT-4o-mini, Firebase, PostgreSQL}}{}
+          \resumeItemListStart
+            \resumeItem{Built full-stack \textbf{agentic AI system} with \textbf{GPT-4o-mini} that autonomously analyzes tasks through contextual questioning, generating multi-stage reminder schedules based on task importance and complexity, deployed on Render with Firebase authentication and Gmail SMTP integration.}
+          \resumeItemListEnd
+      \resumeProjectHeading
+          {\textbf{LinkedIn Job Application Bot} \textbar{} \emph{Python, Playwright, OpenAI GPT, CI/CD}}{}
+          \resumeItemListStart
+            \resumeItem{Developed autonomous \textbf{agentic job application system} using \textbf{OpenAI GPT models} for intelligent resume customization, automating LinkedIn job search, filtering, and "Easy Apply" submissions with smart approval workflows, achieving \textbf{10x faster} application processing through Playwright browser automation.}
+          \resumeItemListEnd
+      \resumeProjectHeading
+          {\textbf{Mail Tracker -- AI-Powered Job Application Tracker} \textbar{} \emph{FastAPI, React/TypeScript, SQLAlchemy, Tailwind CSS, Docker}}{}
+          \resumeItemListStart
+            \resumeItem{Built full-stack application connecting to \textbf{Gmail, Outlook, and IMAP} accounts to automatically scan emails, classify job-related correspondence using \textbf{LLMs (Ollama/Groq)}, and track application statuses in real time, with a comprehensive security layer including \textbf{Fernet encryption} at rest, two-pass email fetching (metadata-first to minimize data exposure), \textbf{PII scrubbing} before cloud LLM calls, prompt injection defenses, \textbf{GDPR-compliant} data export/erasure endpoints, \textbf{OAuth2} token management, \textbf{JWT authentication} with account lockout, rate limiting, and Content-Security-Policy headers.}
+          \resumeItemListEnd
+    \resumeSubHeadingListEnd
+
+%-----------PUBLICATIONS-----------
+\section{Publications}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{Autonomous Vehicular Corridor using AI} -- International Journal for Research in Applied Science \& Engineering Technology (2021) \textbar{} \href{https://doi.org/10.22214/ijraset.2021.35272}{\underline{DOI: 10.22214/ijraset.2021.35272}}
+    }}
+ \end{itemize}
+
+%-----------CERTIFICATIONS-----------
+\section{Certifications \& Training}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{AWS Certified Cloud Practitioner} (Amazon Web Services) \\
+     \textbf{AI Product Management Specialization} -- Duke University (Coursera)
+    }}
+ \end{itemize}
+
+%-----------TECHNICAL SKILLS-----------
+\section{Skills}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{Programming Languages}{: Python, C++, C, SQL, MATLAB, Verilog, Bash/PowerShell} \\
+     \textbf{Machine Learning \& AI}{: TensorFlow, Keras, PyTorch, Scikit-learn, OpenCV, YOLO (v3-v8), Reinforcement Learning (Q-Learning), Computer Vision, NLP, LLMs, Deep Learning (CNNs, ResNet, DNNs)} \\
+     \textbf{Edge Computing \& Embedded Systems}{: Raspberry Pi (3/4/5), picamera2, NVIDIA Jetson, Real-time Processing, Hardware Acceleration} \\
+     \textbf{Cloud \& DevOps}{: AWS (EC2, S3, Lambda, SageMaker), Docker, CI/CD, Git/GitHub, Linux Administration} \\
+     \textbf{Frameworks \& Tools}{: Flask, FastAPI, OpenCV, NumPy, Pandas, Matplotlib, Jupyter, VS Code, MATLAB Simulink, LabVIEW} \\
+     \textbf{Methodologies}{: Agile/Scrum, MLOps, Data Pipeline Architecture, Model Deployment, System Integration, Technical Leadership}
+    }}
+ \end{itemize}
+
+%-------------------------------------------
+\end{document}
