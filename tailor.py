@@ -128,7 +128,6 @@ Return the full tailored LaTeX and the changes report in the exact format specif
 """.strip()
 
     payload = {
-        "model": model,
         "messages": [
             {"role": "system", "content": SYSTEM_INSTRUCTIONS},
             {"role": "user", "content": user_message},
@@ -137,27 +136,56 @@ Return the full tailored LaTeX and the changes report in the exact format specif
         "max_tokens": 8192,
     }
 
-    try:
-        resp = requests.post(
-            GROQ_ENDPOINT,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-            timeout=120,
-        )
-    except requests.RequestException as exc:
-        return TailorResult(False, "", "", f"Network error calling Groq: {exc}")
+    # Fallback chain: try preferred model first, then others with higher TPM limits
+    fallback_models = [
+        model,
+        "llama-3.1-8b-instant",
+        "llama3-8b-8192",
+    ]
+    # Deduplicate while preserving order
+    seen: set = set()
+    models_to_try = [m for m in fallback_models if not (m in seen or seen.add(m))]
 
-    if resp.status_code != 200:
+    last_error = ""
+    for attempt_model in models_to_try:
         try:
-            err = resp.json().get("error", {}).get("message", resp.text)
-        except Exception:
-            err = resp.text
+            resp = requests.post(
+                GROQ_ENDPOINT,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={**payload, "model": attempt_model},
+                timeout=120,
+            )
+        except requests.RequestException as exc:
+            return TailorResult(False, "", "", f"Network error calling Groq: {exc}")
+
+        if resp.status_code == 413:
+            try:
+                last_error = resp.json().get("error", {}).get("message", resp.text)
+            except Exception:
+                last_error = resp.text
+            # Request too large for this model — try next
+            continue
+
+        if resp.status_code != 200:
+            try:
+                err = resp.json().get("error", {}).get("message", resp.text)
+            except Exception:
+                err = resp.text
+            return TailorResult(
+                False, "", "",
+                f"Groq API error (HTTP {resp.status_code}) with model {attempt_model}: {err}",
+            )
+
+        # Success — break out of the loop
+        break
+    else:
         return TailorResult(
             False, "", "",
-            f"Groq API error (HTTP {resp.status_code}): {err}",
+            f"All models exceeded token limits. Last error: {last_error}\n"
+            "Try a shorter job description or resume.",
         )
 
     try:
@@ -173,7 +201,7 @@ Return the full tailored LaTeX and the changes report in the exact format specif
         return TailorResult(False, "", "", f"Could not parse Groq response: {exc}")
 
     if not raw.strip():
-        return TailorResult(False, "", "", "Gemini returned an empty response.")
+        return TailorResult(False, "", "", "Groq returned an empty response.")
 
     # Parse the two tagged sections
     tex_match = re.search(
