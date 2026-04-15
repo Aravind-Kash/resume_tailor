@@ -135,59 +135,27 @@ Return the full tailored LaTeX and the changes report in the exact format specif
         "max_tokens": 8192,
     }
 
-    # Fallback chain: try preferred model first, then others with higher TPM limits
-    fallback_models = [
-        model,
-        "llama-3.1-8b-instant",
-        "gemma2-9b-it",
-    ]
-    # Deduplicate while preserving order
-    seen: set = set()
-    models_to_try = [m for m in fallback_models if not (m in seen or seen.add(m))]
+    try:
+        resp = requests.post(
+            GROQ_ENDPOINT,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={**payload, "model": model},
+            timeout=120,
+        )
+    except requests.RequestException as exc:
+        return TailorResult(False, "", "", f"Network error calling Groq: {exc}")
 
-    last_error = ""
-    for attempt_model in models_to_try:
+    if resp.status_code != 200:
         try:
-            resp = requests.post(
-                GROQ_ENDPOINT,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={**payload, "model": attempt_model},
-                timeout=120,
-            )
-        except requests.RequestException as exc:
-            return TailorResult(False, "", "", f"Network error calling Groq: {exc}")
-
-        if resp.status_code == 413 or (
-            resp.status_code == 400
-            and "decommissioned" in resp.text
-        ):
-            try:
-                last_error = resp.json().get("error", {}).get("message", resp.text)
-            except Exception:
-                last_error = resp.text
-            # Request too large for this model — try next
-            continue
-
-        if resp.status_code != 200:
-            try:
-                err = resp.json().get("error", {}).get("message", resp.text)
-            except Exception:
-                err = resp.text
-            return TailorResult(
-                False, "", "",
-                f"Groq API error (HTTP {resp.status_code}) with model {attempt_model}: {err}",
-            )
-
-        # Success — break out of the loop
-        break
-    else:
+            err = resp.json().get("error", {}).get("message", resp.text)
+        except Exception:
+            err = resp.text
         return TailorResult(
             False, "", "",
-            f"All models exceeded token limits. Last error: {last_error}\n"
-            "Try a shorter job description or resume.",
+            f"Groq API error (HTTP {resp.status_code}): {err}",
         )
 
     try:
